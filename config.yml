@@ -4,68 +4,68 @@
   become: true
   tasks:
     - name: Установка docker
-      block:        
-      - name: Добавляем universe
-        apt_repository:
-          repo: "deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
-          state: present
-      
-      - name: Установка дополнительных пакетов
-        apt:
-          name:
-            - apt-transport-https
-            - ca-certificates
-            - curl
-            - gnupg
-            - lsb-release
-          update_cache: true
-          cache_valid_time: 86400
-      
-      - name: Создание директории для ключей
-        file:
-          path: /etc/apt/keyrings
-          state: directory
-          mode: '0755'
+      block:
+        - name: Добавляем universe
+          ansible.builtin.apt_repository:
+            repo: "deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
+            state: present
 
-      - name: Загрузка GPG ключа Docker
-        get_url:
-          url: https://download.docker.com/linux/ubuntu/gpg
-          dest: /etc/apt/keyrings/docker.asc
-          mode: '0644'
-        
-      - name: Добавление репозитория Docker
-        apt_repository:
-          repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-          state: present
-          filename: docker
+        - name: Установка дополнительных пакетов
+          ansible.builtin.apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+              - curl
+              - gnupg
+              - lsb-release
+            update_cache: true
+            cache_valid_time: 86400
 
-      - name: Обновление кеша пакетов
-        apt:
-          update_cache: true
+        - name: Создание директории для ключей
+          ansible.builtin.file:
+            path: /etc/apt/keyrings
+            state: directory
+            mode: '0755'
 
-      - name: Установка Docker Engine
-        apt:
-          name:
-            - docker-ce
-            - docker-ce-cli
-            - containerd.io
-            - docker-buildx-plugin
-            - docker-compose-plugin
-          state: latest
-    
-      - name: Проверка и перезапуск Docker
-        service:
-          name: docker
-          state: restarted
-          enabled: true
-      
-      - name: Завершение установки
-        block:
-          - name: Добавление пользователя в группу docker
-            user:
-              name: "{{ user }}"
-              groups: docker
-              append: true
+        - name: Загрузка GPG ключа Docker
+          ansible.builtin.get_url:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            dest: /etc/apt/keyrings/docker.asc
+            mode: '0644'
 
-          - name: Перезагрузка
-            reboot:
+        - name: Добавление репозитория Docker
+          ansible.builtin.apt_repository:
+            repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+            state: present
+            filename: docker
+
+        - name: Обновление кеша пакетов
+          ansible.builtin.apt:
+            update_cache: true
+
+        - name: Установка Docker Engine
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+            state: present
+
+        - name: Проверка и перезапуск Docker
+          ansible.builtin.service:
+            name: docker
+            state: restarted
+            enabled: true
+
+        - name: Завершение установки
+          block:
+            - name: Добавление пользователя в группу docker
+              ansible.builtin.user:
+                name: "{{ user }}"
+                groups: docker
+                append: true
+
+            - name: Перезагрузка
+              ansible.builtin.reboot:
